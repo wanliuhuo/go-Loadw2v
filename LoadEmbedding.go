@@ -10,30 +10,16 @@ import (
 )
 
 type Vector struct {
-	word  string
-	vec   []float64
-	elems []string
+	word string
+	vec  []float64
 }
 
 // model is the total vec
-type Model []*Vector
-
-// vec.String() return word aling with vec value
-func (v *Vector) String() string {
-	return fmt.Sprintf("%s\t%v", v.word, v.vec)
-}
-
-// vec.Word() return word
-func (v *Vector) Word() string {
-	return v.word
-}
-
-func (v *Vector) Vector() []float64 {
-	return v.vec
-}
+// type Model []*Vector
+type Model map[string](*Vector)
 
 // Load word vec From the embedding file
-func LoadText(filepath string, dimension int) (Model, error) {
+func LoadEmbeddingText(filepath string, dimension int) (Model, error) {
 	r, err := os.Open(filepath)
 	if err != nil {
 		fmt.Errorf("unable to open the embedding file %s", err)
@@ -41,7 +27,8 @@ func LoadText(filepath string, dimension int) (Model, error) {
 	}
 	defer r.Close()
 	scanner := bufio.NewScanner(r)
-	result := Model{}
+	var result Model
+	result = make(map[string]*Vector)
 	for scanner.Scan() {
 		tokens := strings.Split(strings.TrimSpace(scanner.Text()), " ")
 		if len(tokens) < (dimension + 1) { // one word + 100 dimension vec
@@ -55,11 +42,7 @@ func LoadText(filepath string, dimension int) (Model, error) {
 			}
 			vec = append(vec, val)
 		}
-		result = append(result, &Vector{
-			word:  tokens[0],
-			vec:   vec,
-			elems: []string{tokens[0]},
-		})
+		result[tokens[0]] = &Vector{word: tokens[0], vec: vec}
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, err
@@ -69,10 +52,8 @@ func LoadText(filepath string, dimension int) (Model, error) {
 
 // find and return specific vector
 func (m Model) Find(word string) *Vector {
-	for _, vec := range m {
-		if vec.word == word {
-			return vec
-		}
+	if _, find := m[word]; find {
+		return m[word]
 	}
 	return nil
 }
